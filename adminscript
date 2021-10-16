@@ -1,0 +1,118 @@
+#!/bin/bash
+#Authhor: CHRISTIAN KAM
+#Purpose: Basic administration task
+#Date: 07/25/2021
+#Modification: 07/26/2021
+
+update ()
+{   
+    updatedb
+    if test $? = 0
+       then echo succefull
+    else
+      echo unsuccesfull
+    fi
+
+}
+
+
+check()
+{
+
+a=`df -h | egrep -v "tmpfs|devtmpfs" | tail -n+2 | awk '{print $5}' | cut -d'%' -f1`
+
+for i in $a
+do
+        if [ $i -ge $max ]
+        then
+        echo "Warning – Disk file system has exceeded 20% on :" `df -h | grep $i`
+       
+        else
+        echo "you have enough space on : " `df -h | grep $i`
+        fi
+done
+}
+
+
+backup()
+{
+
+tar -zcvf $Dest $backup_file >/dev/null 2>&1
+
+if  test $? -eq 0
+then 
+echo "Completed backup"
+else
+echo "failed backup"
+fi
+}
+
+
+pingip()
+{
+    for ip in $(cat $IPLIST)
+
+do
+   ping -c1 $ip &> /dev/null
+   if [ $? -eq 0 ]
+   then
+   echo $ip ping passed
+   else
+   echo $ip ping failed
+   fi
+done
+}
+
+
+empty()
+{
+
+for i in *
+do
+if [ -s $i ]; then
+echo "$i is a file and size is greater than zero."
+else
+echo "$i is an empty file and deleting now..."
+rm -rf $i
+fi
+done
+
+}    
+
+PS3="PLEASE MAKE YOUR CHOICE: "
+select choice in update check_disk backup delete_empty_file pingiplist "QUIT MENU"
+do
+case $choice in
+
+
+update) echo "please be a root user before to update the system"
+echo "The update will be running in the background"
+update &
+;;
+
+check_disk) read -p "what is the percentage of space do you want to filter: " max
+check
+;;
+
+backup)
+echo "The backup will be running in the background"
+read -p "give the the complete path of the file or directoty you want to backup :"  backup_file
+read -p "give the full path of the destination of the archive file:" Dest
+echo "Started backup"
+backup &
+;;
+
+delete_empty_file) read -p "WARNING THIS SCRIPT WILL DELETTE ALL EMPTY FILE DO YOU WANT TO CONTINUE (y/n) " answer
+if [ "$answer" = "y" ] || [ "$answer" = "Y" ] ; 
+then
+empty
+fi
+;;
+pingiplist) read -p "enter the full path of the ip list :" IPLIST
+pingip;;
+
+"QUIT MENU") break ;;
+
+*) echo " Please make a correct choice"
+esac
+done
